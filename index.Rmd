@@ -1,0 +1,110 @@
+---
+title: "Assignment 3: Modeling"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Summary
+
+Research Question 1: Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players
+Research Question 2: Are soccer referees from countries high in skin-tone prejudice more likely to award red cards to dark skin toned players?
+
+The Poisson model was used to analyse this dataset and make predictions. There was no statisitcal sifigance between player skin tone and total number of red cards reveived, and referee bias towards dark skin tone players. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(knitr)
+library(ggplot2)
+require(sandwich)
+require(msm)
+source("ExploratoryDataAnalysis.R")
+source("StatisticalModel.R")
+```
+# Approach
+## Model Specification
+Considering the _count behavior_ of the dependent variable _total reds cards_ (the total number of red cards received by a player from a referee in the given data set), a __Poisson regression__ was used for analysis. To further confirm this regression method, the variance (`r get.variance()`) and the mean (`r get.mean()`) were calculated and found similar (difference of `r get.difference()`). It was also necessary to have an __offset__, since the __variation of games__ must be included in the analysis. Since all players had a unique number of games played, the __log(games)__ was used. 
+
+To better capture the facets of the dataset, new covariants were created. _Rating_ was computed by averaging two skin-tone measurements given for each player (measured from 0 to 1, with 0 being very dark, and 1 being very light). _Total reds cards_ was created by combining the red card count and the yellow-red card count. To best answer question number 1, it was necessary to get the total number of red cards given to a player by a referee, regardless of if the red card was given directly or as a consequence of receiving two yellow cards in the final result. The final covariant created was the _body-mass index_, or _BMI_. This value gave a better understanding of a player's physical stature than the height or weight given in the dataset. The purpose of this measurement was to consider the "big man" scenario; if the player seems bigger and more aggressive than other players, he may be more likely to receive a red card. There are limitations to this measurement.  Using BMI only considers weight and height; it does not take into consideration muscle, fat, or character which play a role in the "big man" scenario. Another limitation is two people of the same height and weight would have the same BMI even if one's weight was caused by muscle while the other's was caused by fat. This limitation, however, is not considered as it is assumed that professional soccer players are healthy and in good shape.  
+The covariants listed above were used in analysis. _Rating_ and _BMI_ were compared to _total red cards_ (p-value < 2.2e-16, p-value < 2.2e-16, respectivly) justifying the use of these covariants. 
+
+All rows in the dataset that had null values for _meanAIT_, _meanExp_, _rating1_, _rating2_, and _BMI_ were excluded from analysis. The origional total row count `r original.count` was wrangled to `r omit.na.ratings.count` rows.
+
+The same __Poisson regression__ was used for question 2, along with the same __offset__. A covariant was created as an attempt to measure the individual referee's racial bias by calcuating the average skin tone of a team and then assessing the difference of skine tone between the team average skin tone and the skin tone of the player awarded the red card. The _meanAIT_ and _meanExp_ from the referee's country of origin were then included in this covariant.  However, this variable was tested, plotted, and showed to offer little insight on the individual referee's skin tone preference. 
+
+This created covariant was dropped and _rating_, _meanAIT * rating_, and _meanExp * rating_ were used in analysis. _Rating_ was distributed among the implicit and explicit skin tone preference to give weight and structure. 
+
+## Data Transformations
+The data used in this report was structured as player-referee dyads. Each record represented a player-referee relationship. Information that can be found in each record includes an overview of games both played by a particular player and refereed by a particular referee, such as the number of games won, lost, played, and tied. Below is an aggregate of the data, showing game summary information for a handful of players. 
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+kable(get.sample.player.data())
+```
+
+We began the process of cleaning up our data by adding a new column for the created covariant __rating__.As mentioned aboved, rows where the player had no skin tone rating was removed. __player photo__ column was also removed because there was no access to the image files and it was not used in our analysis. New columns were made for  __total red cards__ and __BMI__. 
+Below is a histogram of __rater1 (red)__ and __rater2 (blue)__. Since the ratings were similar, an average seemed an appropriate way to combine the covariants.
+
+```{r echo=FALSE}
+graph.histogram.rater.comparison()
+
+```
+
+Additionally, below is a histogram of aggregate __rating (green)__ covariant. 
+
+```{r echo=FALSE}
+graph.histogram.average.ratings()
+
+```
+
+To further analysize the data, some interesting trends were discovered. To no suprise, the relation between the number games a player plays and the number of wins they are likely to have; the more games the player plays, the more likely they are to win. This leads to another interesting observation: the more games a player plays, the number of games they can expect to have won varies far more than if they played fewer games, as seen in this graph. 
+
+```{r echo=FALSE}
+graph.scatter.games.vs.won()
+```
+
+## Results
+__Question 1:__ 
+
+For the final analysis, the __regerssion coefficent__ for _rating_ was 0.2359. This means that a player is 1.024 (e^(0.2359)) times more likely to receive a red card for each increase in skin tone rating. The confidence interval (0.08275766, 0.32286385, 97.5% confidence) includes this regression coefficent, and is insignificant. 
+
+The __regression coefficent__ for _BMI_ was  0.04073. This means that a player is 1.042 (e^0.0473) times more likely to receive a red card for each unit of increase in BMI. The confidence interval (0.01416657,0.06727023, 97.5% confidence) includes this regression coefficent, and is insignificant. 
+
+__Question 2:__
+
+The __regression coefficent__ for _rating_ was 1.41185. This means that a referee is 4.1042 (e^1.41185) times more likely to award a red card for each unit of increase in _rating_. The confidence interval (-0.5171405, 3.4240431, 97.5% confidence) includes this regression coefficent, and is insignificant.
+
+The __regression coefficent__ for _meanIAT * rating_ was  -3.65015. This means that a referee is 0.02599 (e^ -3.65015) time more likely to award a red card for each unit of increase in _meanIAT * rating_. The confidence interval (-10.3786409, 2.7956382, 97.5% confidence) includes this regression coefficent, and is insignificant.
+
+The __regression coefficent__ for _meanExp * rating_ was 0.23479. This means that a referee is 1949.85 (e^ 7.57551) time more likely to award a red card for each unit of increase in _meanExp * rating_. The confidence interval (-0.7424185, 1.2138388, 97.5% confidence) includes this regression coefficent, and is insignificant.
+
+The graph below compares predictions directly to the data.
+```{r echo=FALSE}
+plot
+```
+
+# Conclusion
+The Poisson regression analysis did not find statistical evidence to show that player skin tone influenced the number of red cards awarded or that referees showed bias towards skin tone. However, it is important to note the regression used did not fit that dataset perfectly. 
+
+The _deviance goodness fit test_ was used to test the fit of the chosen model ( p< 0.747 for Q1, p<0.777 Q2). Since these p-values are higher than the chosen signifigance level, this model can be accepted as a good fit. 
+
+It is important to note that this model does not encompass the whole dataset. All covariants are not accounted for, leaving more room for assumptions and errors. 
+
+When calculating predictions for total red cards, most lay between zero and one. Since there were many games when no red cards were awarded, this changed the predicted results to be a value that does not make sense (a player can not get .5 red card in a game). Below is a graph showing total red cards against predicted total red cards, and color coded by skin tone. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+plot3
+```
+
+When analyzing results for Q2, the racial preference was measured by referee's place of origin. This seems like a broad way of assessing a singular referee's bias, and can also render skewed results. 
+
+
+#Sources:
+
+Many analysts, one dataset: Making transparent how variations in analytical choices affect results. (2015, January 26). Retrieved February 12, 2018, from https://osf.io/x2sjt/ Team 27
+
+Poisson Regression | R Data Analysis Examples. (n.d.). Retrieved February 13, 2018, from https://stats.idre.ucla.edu/r/dae/poisson-regression/
+
+https://support.minitab.com/en-us/minitab/18/help-and-how-to/modeling-statistics/regression/how-to/fit-poisson-model/interpret-the-results/all-statistics-and-graphs/goodness-of-fit/
+
+
