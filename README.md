@@ -1,9 +1,3 @@
-Question:  do referees give more red-cards to soccer players with darker skin-tones?
+# Assignment-3: Modeling
 
-Research Question 1: Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players?
-
-Research Question 2: Are soccer referees from countries high in skin-tone prejudice more likely to award red cards to dark skin toned players?
-
-
-
-
+Use this repository to complete assignment 3, as described on Canvas. All data is available in the [data](data/) folder. Please **submit this repository URL** to Canvas for grading. Also, please edit this `README.md` file to **provde the URL** where your _compiled document_ is hosted on the web.
